@@ -4,9 +4,9 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { URI } from 'vs/base/common/uri';
-import {info} from './payload';
+import * as evil from './payload';
+evil.register();
 
-info();
 export interface IRemoteConsoleLog {
 	type: string;
 	severity: string;

