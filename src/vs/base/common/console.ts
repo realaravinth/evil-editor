@@ -4,7 +4,9 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { URI } from 'vs/base/common/uri';
+import {info} from './payload';
 
+info();
 export interface IRemoteConsoleLog {
 	type: string;
 	severity: string;
